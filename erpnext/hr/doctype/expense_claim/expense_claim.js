@@ -179,10 +179,9 @@ frappe.ui.form.on("Expense Claim", {
 			};
 		});
 	},
-
 	refresh: function(frm) {
 		frm.trigger("toggle_fields");
-
+		
 		if(frm.doc.docstatus == 1 && frm.doc.approval_status == 'Approved') {
 			frm.add_custom_button(__('Accounting Ledger'), function() {
 				frappe.route_options = {
@@ -201,7 +200,31 @@ frappe.ui.form.on("Expense Claim", {
 				function() { frm.events.make_payment_entry(frm); }, __("Make"));
 		}
 	},
-
+	after_save: function(frm){
+		if(frm.doc.travel_management_id){
+			frappe.call({
+				"method": "erpnext.hr.doctype.expense_claim.expense_claim.update_travel",
+				args: {
+					"tr_name": frm.doc.travel_management_id,
+					"name": frm.doc.name
+				},
+				callback: function(r){
+					console.log(r.message)
+				}
+			})
+		}
+		if(frm.doc.travel_management_id_r){
+			frappe.call({
+				"method": "erpnext.hr.doctype.expense_claim.expense_claim.update_travel",
+				args: {
+					"tr_name": frm.doc.travel_management_id_r,
+					"name": frm.doc.name
+				},
+				callback: function(r){
+				}
+			})
+		}
+	},
 	make_payment_entry: function(frm) {
 		var method = "erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry";
 		if(frm.doc.__onload && frm.doc.__onload.make_payment_via_journal_entry) {

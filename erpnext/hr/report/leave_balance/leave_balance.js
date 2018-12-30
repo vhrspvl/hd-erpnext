@@ -1,27 +1,22 @@
-// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
-// License: GNU General Public License v3. See license.txt
+// Copyright (c) 2016, Frappe Technologies Pvt. Ltd. and contributors
+// For license information, please see license.txt
+/* eslint-disable */
 
-frappe.query_reports["Employee Leave Balance"] = {
+frappe.query_reports["Leave Balance"] = {
 	"filters": [
 		{
 			"fieldname":"from_date",
 			"label": __("From Date"),
 			"fieldtype": "Date",
 			"reqd": 1,
-			"default": frappe.datetime.year_start()
+			"default": frappe.defaults.get_default("year_start_date")
 		},
 		{
 			"fieldname":"to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date",
 			"reqd": 1,
-			"default": frappe.datetime.year_end()
-		},
-		{
-			"fieldname":"department",
-			"label": __("Department"),
-			"fieldtype": "Link",
-			"options": "Department"
+			"default": frappe.defaults.get_default("year_end_date")
 		},
 		{
 			"fieldname":"company",
