@@ -11,6 +11,9 @@ from erpnext.hr.utils import set_employee_name
 from erpnext.hr.doctype.leave_block_list.leave_block_list import get_applicable_block_dates
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 from erpnext.hr.doctype.employee_leave_approver.employee_leave_approver import get_approver_list
+from frappe.utils import today,flt,add_days,add_months,date_diff,getdate,formatdate,cint,cstr
+from hunter_douglas.hunter_douglas.report.monthly_absenteesim.monthly_absenteesim import is_holiday    
+
 
 
 class LeaveDayBlockedError(frappe.ValidationError): pass
@@ -18,6 +21,8 @@ class OverlapError(frappe.ValidationError): pass
 class InvalidLeaveApproverError(frappe.ValidationError): pass
 class LeaveApproverIdentityError(frappe.ValidationError): pass
 class AttendanceAlreadyMarkedError(frappe.ValidationError): pass
+class LeavePolicyViolationError(frappe.ValidationError): pass
+
 
 from frappe.model.document import Document
 class LeaveApplication(Document):
@@ -41,6 +46,7 @@ class LeaveApplication(Document):
         self.validate_salary_processed_days()
         self.validate_leave_approver()
         self.validate_attendance()
+        self.validate_policy()
 
     def on_update(self):
         if (not self.previous_doc and self.leave_approver) or (self.previous_doc and \
@@ -209,21 +215,22 @@ class LeaveApplication(Document):
             frappe.throw(_("Leave of type {0} cannot be longer than {1}").format(self.leave_type, max_days))
 
     def validate_leave_approver(self):
-        employee = frappe.get_doc("Employee", self.employee)
-        leave_approvers = [l.leave_approver for l in employee.get("leave_approvers")]
+        if not frappe.session.user == 'hr.hdi@hunterdouglas.asia':
+            employee = frappe.get_doc("Employee", self.employee)
+            leave_approvers = [l.leave_approver for l in employee.get("leave_approvers")]
 
-        if len(leave_approvers) and self.leave_approver not in leave_approvers:
-            frappe.throw(_("Leave approver must be one of {0}")
-                .format(comma_or(leave_approvers)), InvalidLeaveApproverError)
+            if len(leave_approvers) and self.leave_approver not in leave_approvers:
+                frappe.throw(_("Leave approver must be one of {0}")
+                    .format(comma_or(leave_approvers)), InvalidLeaveApproverError)
 
-        elif self.leave_approver and not frappe.db.sql("""select name from `tabHas Role`
-            where parent=%s and role='Leave Approver'""", self.leave_approver):
-            frappe.throw(_("{0} ({1}) must have role 'Leave Approver'")\
-                .format(get_fullname(self.leave_approver), self.leave_approver), InvalidLeaveApproverError)
+            elif self.leave_approver and not frappe.db.sql("""select name from `tabHas Role`
+                where parent=%s and role='Leave Approver'""", self.leave_approver):
+                frappe.throw(_("{0} ({1}) must have role 'Leave Approver'")\
+                    .format(get_fullname(self.leave_approver), self.leave_approver), InvalidLeaveApproverError)
 
-        elif self.docstatus==1 and len(leave_approvers) and self.leave_approver != frappe.session.user:
-            frappe.throw(_("Only the selected Leave Approver can submit this Leave Application"),
-                LeaveApproverIdentityError)
+            elif self.docstatus==1 and len(leave_approvers) and self.leave_approver != frappe.session.user:
+                frappe.throw(_("Only the selected Leave Approver can submit this Leave Application"),
+                    LeaveApproverIdentityError)
 
     def validate_attendance(self):
         attendance = frappe.db.sql("""select name from `tabAttendance` where employee = %s and (attendance_date between %s and %s)
@@ -232,6 +239,23 @@ class LeaveApplication(Document):
         if attendance:
             frappe.throw(_("Attendance for employee {0} is already marked for this day").format(self.employee),
                 AttendanceAlreadyMarkedError)
+
+    def validate_policy(self):
+        preday = add_days(self.from_date,-1)
+        while is_holiday(self.employee,preday):
+            preday = add_days(preday,-1)   
+        wo_leave = frappe.db.get_value("Leave Application",{"from_date":preday,"employee":self.employee},["leave_type"])
+        if wo_leave:
+            frappe.throw(_("Leave of type {0} cannot be applied").format(wo_leave),
+                LeavePolicyViolationError)
+
+        leave_record = frappe.db.sql("""select leave_type from `tabLeave Application`
+            where employee = %s and %s between from_date and to_date""", (self.employee, add_days(self.from_date,-1)), as_dict=True)
+        if leave_record:
+            leave_type = [x.leave_type for x in leave_record]     
+            if leave_type and leave_type[0] != self.leave_type:
+                frappe.throw(_("Leave of type {0} cannot be clubbed with previous {1}").format(self.leave_type,leave_type[0]),
+                    LeavePolicyViolationError)       
 
     def notify_employee(self, status):
         employee = frappe.get_doc("Employee", self.employee)

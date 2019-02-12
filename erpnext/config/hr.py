@@ -4,6 +4,7 @@ import frappe
 
 def get_data():
     system_manager = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "System Manager"})
+    line_manager = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "Line Manager"})
     if system_manager:
         return [
             {
@@ -439,6 +440,14 @@ def get_data():
                         "description":_("Mark Attendance for multiple employees"),
                         "hide_count": True
                     },
+                    {
+                        "label": _("Performance Management"),
+                        "type": "doctype",
+                        "name": "Appraisal",
+                        "description":_("Upload attendance from a .csv file"),
+                        "hide_count": True
+                        # "hidden": 1
+                    },
                     # {
                     #     "type": "doctype",
                     #     "name": "Attendance",
@@ -480,31 +489,36 @@ def get_data():
                         "type": "report",
                         "is_query_report": True,
                         "name": "Employee Leave Balance",
-                        "doctype": "Leave Application"
+                        "doctype": "Leave Application",
+                        "hide_count": True
                     },
                     {
                         "type": "doctype",
                         "name": "Leave Application",
                         "description": _("Applications for leave."),
+                        "hide_count": True
                     },
                     
                     {
                         "type": "doctype",
                         "label": _("On Duty Application"),
                         "name": "On Duty Application",
-                        "description": _("Applications for OnDuty.")
+                        "description": _("Applications for OnDuty."),
+                        "hide_count": True
                     },
                     {
                         "type": "doctype",
                         "label": _("Tour Application"),
                         "name": "Tour Application",
-                        "description": _("Applications for OnDuty.")
+                        "description": _("Applications for OnDuty."),
+                        "hide_count": True
                     },
                     
                     {
                         "type": "doctype",
                         "name": "Movement Register",
-                        "description": _("Applications for Permission.")
+                        "description": _("Applications for Permission."),
+                        "hide_count": True
                     },
                     {
                         "type": "doctype",
@@ -559,32 +573,32 @@ def get_data():
 
                 ]
             },
-            {
-                "label": _("Travel Management"),
-                "items": [
-                    {
-                        "type": "doctype",
-                        "name": "Travel Management",
-                        "description": _("Bulk Movement Register Approval."),
-                    },
-                    {
-                        "type": "doctype",
-                        "name": "Travel Management Approval",
-                        "description": _("Bulk Movement Register Approval."),
-                    },
-                    {
-                        "type": "doctype",
-                        "name": "Expense Claim",
-                        "description": _("Claims for company expense."),
-                    },
-                    {
-                        "type": "doctype",
-                        "name": "Expense Claim Approval",
-                        "label": _("Expense Claim Approval"),
-                        "description": _("Bulk Expense Claim Approval")
-                    },
-                ]
-            },
+            # {
+            #     "label": _("Travel Management"),
+            #     "items": [
+            #         {
+            #             "type": "doctype",
+            #             "name": "Travel Management",
+            #             "description": _("Bulk Movement Register Approval."),
+            #         },
+            #         {
+            #             "type": "doctype",
+            #             "name": "Travel Management Approval",
+            #             "description": _("Bulk Movement Register Approval."),
+            #         },
+            #         {
+            #             "type": "doctype",
+            #             "name": "Expense Claim",
+            #             "description": _("Claims for company expense."),
+            #         },
+            #         {
+            #             "type": "doctype",
+            #             "name": "Expense Claim Approval",
+            #             "label": _("Expense Claim Approval"),
+            #             "description": _("Bulk Expense Claim Approval")
+            #         },
+            #     ]
+            # },
             # {
 
             #     "label": _("Performance Management"),

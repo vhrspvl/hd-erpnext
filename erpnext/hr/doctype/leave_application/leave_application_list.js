@@ -24,7 +24,7 @@ frappe.listview_settings['Leave Application'] = {
 						name: r.message[0].name
 					},
 					callback: function(r){
-						emp = r.message.employee;
+						emp = r.message.employee_number;
 						if (!frappe.route_options) {
 							frappe.route_options = {
 								"employee": ["=", emp]

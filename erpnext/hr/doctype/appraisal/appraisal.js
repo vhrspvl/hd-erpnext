@@ -19,11 +19,11 @@ cur_frm.cscript.onload_post_render = function(doc,cdt,cdn){
 	}
 }
 
-cur_frm.cscript.refresh = function(doc,cdt,cdn){
+cur_frm.cscript.refresh = function(doc,dt,dn){
 
 }
 
-cur_frm.cscript.kra_template = function(doc, dt, dn) {
+cur_frm.cscript.kra_template = function(doc, cdt, cdn) {
 	doc.goals = [];
 	erpnext.utils.map_current_doc({
 		method: "erpnext.hr.doctype.appraisal.appraisal.fetch_appraisal_template",
@@ -45,20 +45,20 @@ cur_frm.cscript.calculate_total_score = function(doc,cdt,cdn){
 
 cur_frm.cscript.score = function(doc,cdt,cdn){
 	var d = locals[cdt][cdn];
-	if (d.score){
-		if (flt(d.score) > 5) {
-			frappe.msgprint(__("Score must be less than or equal to 5"));
-			d.score = 0;
-			refresh_field('score', d.name, 'goals');
-		}
-		var total = flt(d.per_weightage*d.score)/100;
-		d.score_earned = total.toPrecision(2);
-		refresh_field('score_earned', d.name, 'goals');
-	}
-	else{
-		d.score_earned = 0;
-		refresh_field('score_earned', d.name, 'goals');
-	}
+	// if (d.score){
+	// 	// if (flt(d.score) > 5) {
+	// 	// 	frappe.msgprint(__("Score must be less than or equal to 5"));
+	// 	// 	d.score = 0;
+	// 	// 	refresh_field('score', d.name, 'goals');
+	// 	// }
+	// 	var total = flt(d.per_weightage*d.score)/100;
+	// 	d.score_earned = total.toPrecision(2);
+	// 	refresh_field('score_earned', d.name, 'goals');
+	// }
+	// else{
+	// 	d.score_earned = 0;
+	// 	refresh_field('score_earned', d.name, 'goals');
+	// }
 	cur_frm.cscript.calculate_total(doc,cdt,cdn);
 }
 

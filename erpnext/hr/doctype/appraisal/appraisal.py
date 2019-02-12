@@ -33,11 +33,16 @@ class Appraisal(Document):
 			frappe.throw(_("End Date can not be less than Start Date"))
 
 	def validate_existing_appraisal(self):
+		# chk = frappe.db.sql("""select name from `tabAppraisal` where employee=%s
+		# and (status='Submitted' or status='Completed')
+		# and ((start_date>=%s and start_date<=%s)
+		# or (end_date>=%s and end_date<=%s))""",
+		# (self.employee,self.start_date,self.end_date,self.start_date,self.end_date))
+		# if chk:
+		# 	frappe.throw(_("Appraisal {0} created for Employee {1} in the given date range").format(chk[0][0], self.employee_name))
 		chk = frappe.db.sql("""select name from `tabAppraisal` where employee=%s
-			and (status='Submitted' or status='Completed')
-			and ((start_date>=%s and start_date<=%s)
-			or (end_date>=%s and end_date<=%s))""",
-			(self.employee,self.start_date,self.end_date,self.start_date,self.end_date))
+			and appraisal_year=%s and (status='Submitted' or status='Completed')""",
+			(self.employee,self.appraisal_year))
 		if chk:
 			frappe.throw(_("Appraisal {0} created for Employee {1} in the given date range").format(chk[0][0], self.employee_name))
 
@@ -52,9 +57,9 @@ class Appraisal(Document):
 		if int(total_w) != 100:
 			frappe.throw(_("Total weightage assigned should be 100%. It is {0}").format(str(total_w) + "%"))
 
-		if frappe.db.get_value("Employee", self.employee, "user_id") != \
-				frappe.session.user and total == 0:
-			frappe.throw(_("Total cannot be zero"))
+		# if frappe.db.get_value("Employee", self.employee, "user_id") != \
+		# 		frappe.session.user and total == 0:
+			# frappe.throw(_("Total cannot be zero"))
 
 		self.total_score = total
 
