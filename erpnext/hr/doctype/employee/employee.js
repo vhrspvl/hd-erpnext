@@ -2,6 +2,9 @@
 // License: GNU General Public License v3. See license.txt
 
 frappe.provide("erpnext.hr");
+// frm.add_custom_button(__("announcement"), function() {
+	
+// })
 erpnext.hr.EmployeeController = frappe.ui.form.Controller.extend({
 	setup: function() {
 		this.frm.fields_dict.user_id.get_query = function(doc, cdt, cdn) {
@@ -28,6 +31,7 @@ erpnext.hr.EmployeeController = frappe.ui.form.Controller.extend({
 	refresh: function() {
 		var me = this;
 		erpnext.toggle_naming_series();
+		
 	},
 
 	date_of_birth: function() {
@@ -87,6 +91,23 @@ frappe.ui.form.on('Employee',{
 				frm.set_value("user_id", r.message)
 			}
 		});
+	},
+	refresh: function(frm){
+		if(!frm.doc.__islocal){
+			frm.add_custom_button(__('Send Announcement'), function () {
+				frappe.call({
+					"method": "hunter_douglas.custom.send_announcement",
+					args : {
+						"name": frm.doc.name					 
+					},
+					callback:function(r){
+
+
+					}
+				})
+			});
+		}
 	}
 });
 cur_frm.cscript = new erpnext.hr.EmployeeController({frm: cur_frm});
+

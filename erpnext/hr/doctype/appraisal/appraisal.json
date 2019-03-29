@@ -643,7 +643,7 @@
   }, 
   {
    "allow_bulk_edit": 0, 
-   "allow_on_submit": 0, 
+   "allow_on_submit": 1, 
    "bold": 0, 
    "collapsible": 0, 
    "columns": 0, 
@@ -684,7 +684,7 @@
  "issingle": 0, 
  "istable": 0, 
  "max_attachments": 0, 
- "modified": "2019-02-11 15:37:04.365293", 
+ "modified": "2019-02-22 15:07:16.627490", 
  "modified_by": "Administrator", 
  "module": "HR", 
  "name": "Appraisal", 

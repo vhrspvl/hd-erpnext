@@ -44,7 +44,7 @@ class Appraisal(Document):
 			and appraisal_year=%s and (status='Submitted' or status='Completed')""",
 			(self.employee,self.appraisal_year))
 		if chk:
-			frappe.throw(_("Appraisal {0} created for Employee {1} in the given date range").format(chk[0][0], self.employee_name))
+			frappe.throw(_("Appraisal {0} already created for Employee {1} in the given date range").format(chk[0][0], self.employee_name))
 
 	def calculate_total(self):
 		total, total_w  = 0, 0

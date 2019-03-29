@@ -4,7 +4,6 @@ import frappe
 
 def get_data():
     system_manager = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "System Manager"})
-    line_manager = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "Line Manager"})
     if system_manager:
         return [
             {
@@ -178,6 +177,12 @@ def get_data():
                     {
                         "type": "doctype",
                         "name": "Performance Management",
+                        "description": _("Performance Management."),
+                    },
+                    {
+                        "type": "doctype",
+                        "name": "Performance Management Self",
+                        "label":_("Performance Management - Self"),
                         "description": _("Performance Management."),
                     }
                 ]
@@ -417,7 +422,7 @@ def get_data():
             # }
         ]
     else:
-        return [
+        columns =  [
             {
                 "label": _("Employee and Attendance"),
                 "items": [
@@ -599,17 +604,19 @@ def get_data():
             #         },
             #     ]
             # },
-            # {
+            {
 
-            #     "label": _("Performance Management"),
-            #     "items": [
-            #         {
-            #             "type": "doctype",
-            #             "name": "Performance Management",
-            #             "description": _("Performance Management."),
-            #         }
-            #     ]
-            # },
+                "label": _("Annual Appraisal (PMS)"),
+                "items": [
+                    {
+                        "type": "doctype",
+                        "name": "Performance Management Self",
+                        "label":_("Performance Management System - Self"),
+                        "description": _("Performance Management."),
+                        "hide_count": True
+                    }
+                ]
+            },
             # {
             # 	"label": _("Payroll"),
             # 	"items": [
@@ -844,3 +851,68 @@ def get_data():
             # 	]
             # }
         ]
+        
+        manager = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "One Above Manager"})
+        if manager:  
+            items = columns[2]['items']
+            item = {}
+            item.update({
+                "type": "doctype",
+                "name": "Performance Management Manager",
+                "label":_("Performance Management System - Manager"),
+                "description": _("Performance Management."),
+                "hide_count": True
+            })
+            items.append(item)
+
+        hod = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "HOD"})
+        if hod:    
+            items = columns[2]['items']
+            item = {}
+            item.update({
+                "type": "doctype",
+                "name": "Performance Management HOD",
+                "label":_("Performance Management System - HOD"),
+                "description": _("Performance Management."),
+                "hide_count": True
+            })
+            items.append(item)
+
+        reviewer = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "Reviewer"})
+        if reviewer:    
+            items = columns[2]['items']
+            item = {}
+            item.update({
+                "type": "doctype",
+                "name": "Performance Management Reviewer",
+                "label":_("Performance Management System - Principle Reviewer"),
+                "description": _("Performance Management."),
+                "hide_count": True
+            })
+            items.append(item)       
+        stu = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "Shift Tool User"})
+        if stu:    
+            items = columns[0]['items']
+            item = {}
+            item.update({
+                "type": "doctype",
+                "name": "Shift Assignment Tool",
+                "label":_("Shift Assignment Tool"),
+                "description": _("Shift Assignment Tool."),
+                "hide_count": True
+            })
+            items.append(item)    
+        sa = frappe.get_doc("User", frappe.session.user).get("roles",{"role": "Shift Tool User"})
+        if sa:    
+            items = columns[0]['items']
+            item = {}
+            item.update({
+                "type": "doctype",
+                "name": "Shift Assignment",
+                "label":_("Shift Assignment"),
+                "description": _("Shift Assignment."),
+                "hide_count": True
+            })
+            items.append(item) 
+
+        return columns

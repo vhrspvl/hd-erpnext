@@ -25,6 +25,7 @@ frappe.ui.form.on("Leave Application", {
 
     validate: function(frm) {
         frm.toggle_reqd("half_day_date", frm.doc.half_day == 1);
+        if(!frappe.user.has_role("Auto Present Employee")){
             frappe.call({
                 "method": 'hunter_douglas.hunter_douglas.doctype.on_duty_application.on_duty_application.check_attendance',
                 args: {
@@ -56,12 +57,21 @@ frappe.ui.form.on("Leave Application", {
                     }
                 }
             });
+        }
+            if(frm.doc.is_from_ar){
+                frappe.set_route("query-report", "Attendance recapitulation")
+            }
     },
 
     refresh: function(frm) {
         if (frm.is_new()) {
             frm.set_value("status", "Open");
             frm.trigger("calculate_total_days");
+        }
+        if(frm.doc.is_from_ar){
+            frm.add_custom_button(__('Back'), function () {
+                frappe.set_route("query-report", "Attendance recapitulation")
+            });
         }
     },
 

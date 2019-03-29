@@ -13,7 +13,7 @@ source_link = "https://github.com/frappe/erpnext"
 
 develop_version = '10.x.x-develop'
 
-error_report_email = "support@erpnext.com"
+error_report_email = "abdulla.pi@voltechgroup.com"
 
 docs_app = "foundation"
 

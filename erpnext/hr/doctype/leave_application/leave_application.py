@@ -242,12 +242,12 @@ class LeaveApplication(Document):
 
     def validate_policy(self):
         preday = add_days(self.from_date,-1)
-        while is_holiday(self.employee,preday):
-            preday = add_days(preday,-1)   
-        wo_leave = frappe.db.get_value("Leave Application",{"from_date":preday,"employee":self.employee},["leave_type"])
-        if wo_leave:
-            frappe.throw(_("Leave of type {0} cannot be applied").format(wo_leave),
-                LeavePolicyViolationError)
+        # while is_holiday(self.employee,preday):
+        #     preday = add_days(preday,-1)   
+        # wo_leave = frappe.db.get_value("Leave Application",{"from_date":preday,"employee":self.employee},["leave_type"])
+        # if wo_leave:
+        #     frappe.throw(_("Leave of type {0} cannot be applied").format(wo_leave),
+        #         LeavePolicyViolationError)
 
         leave_record = frappe.db.sql("""select leave_type from `tabLeave Application`
             where employee = %s and %s between from_date and to_date""", (self.employee, add_days(self.from_date,-1)), as_dict=True)
