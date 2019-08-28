@@ -42,3 +42,33 @@ class JobApplicant(Document):
 			if names:
 				frappe.throw(_("Email Address must be unique, already exists for {0}").format(comma_and(names)), frappe.DuplicateEntryError)
 
+
+
+
+
+
+@frappe.whitelist()
+def send_next_level_details(emp_id,name):
+	if emp_id and name:
+		frappe.sendmail(
+			recipients= emp_id,
+			subject='Job Applicant',
+			message="""
+			<p> Dear Sir,<p><br>
+			<p>You are the Next Level of Interviewer for the below applicant.You can see it by clicking <a href= "%s">Job Applicant</a></p><br><br>
+			<p>Thank You</p>""" %(frappe.utils.get_url_to_form("Job Applicant",name))
+        )
+	return "Ok"
+
+@frappe.whitelist()
+def send_mail_for_salary_approval(name):
+	if name:
+		frappe.sendmail(
+			recipients= ['subash.p@voltechgroup.com'],
+			subject='Salary Approval',
+			message="""
+			<p> Dear Sir,<p><br>
+			<p>Kindly Approve the Salary for the new Employee. You can see it by clicking <a href= "%s">Approve Salary</a></p><br><br>
+			<p>Thank You</p>""" %(frappe.utils.get_url_to_form("Job Applicant",name))
+        )
+	return "Ok"

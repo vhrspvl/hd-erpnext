@@ -20,6 +20,19 @@ frappe.ui.form.on("Offer Letter", {
 				}
 			);
 		}
+	},
+	send_mail_to_candidate: function(frm){
+		frappe.call({
+			"method": 'erpnext.hr.doctype.offer_letter.offer_letter.send_mail_to_candidate',
+			args:{
+				"job_applicant": frm.doc.job_applicant
+			},
+			callback: function(r){
+				if(r.message == "OK"){
+					frm.set_value("mail_sent","Yes")
+				}
+			}
+		})
 	}
 
 });

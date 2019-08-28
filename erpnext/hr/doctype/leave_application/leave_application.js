@@ -24,8 +24,30 @@ frappe.ui.form.on("Leave Application", {
     },
 
     validate: function(frm) {
+        // if(frm.doc.employee){
+        //     frappe.call({
+        //         "method": 'hunter_douglas.update_attendance.check_other_docs',
+        //         args: {
+        //             "employee": frm.doc.employee,
+        //             "from_date": frm.doc.from_date,
+        //             "to_date": frm.doc.to_date,
+        //             "from_date_session": frm.doc.from_date_session,
+        //             "to_date_session": frm.doc.to_date_session
+        //         },
+        //         callback: function (r) {
+        //             if(r.message != 0){
+        //                 var type = r.message.type 
+        //                 var date = r.message.date
+        //                 validated = false
+        //                 var s = "You Already Applied type on date"
+        //                 var rs = s.replace("type",type).replace("date",date)
+        //                 frappe.msgprint(rs)
+        //             }
+        //         }
+        //     })
+        // } 
         frm.toggle_reqd("half_day_date", frm.doc.half_day == 1);
-        if(!frappe.user.has_role("Auto Present Employee")){
+        if(!frappe.user.has_role("Auto Present Employee") && (frappe.user.has_role("Employee"))){
             frappe.call({
                 "method": 'hunter_douglas.hunter_douglas.doctype.on_duty_application.on_duty_application.check_attendance',
                 args: {
@@ -58,12 +80,53 @@ frappe.ui.form.on("Leave Application", {
                 }
             });
         }
-            if(frm.doc.is_from_ar){
-                frappe.set_route("query-report", "Attendance recapitulation")
-            }
+        if(frm.doc.is_from_ar && frm.doc.status == "Applied"){
+            frappe.set_route("query-report", "Attendance recapitulation")
+        }
+        if(frm.doc.from_date){
+            frappe.call({
+                "method": "erpnext.hr.doctype.leave_application.leave_application.check_attendance",
+                args:{
+                    "emp": frm.doc.employee,
+                    "att_date": frm.doc.from_date,
+                    "l_type": frm.doc.leave_type1
+                },
+                callback: function(r){
+                    if(r.message == "Allowed"){
+                    }
+                    else{
+                        frappe.msgprint(r.message)
+                        frappe.validated = false;
+
+                    }
+                }
+            })
+        }
     },
 
     refresh: function(frm) {
+        
+        // var from_time_picker = frm.fields_dict.from_date.datepicker;
+        // var dt = new Date();
+        // var month = dt.getMonth();
+        // var year = dt.getFullYear();
+        // var FirstDay = new Date(year, month, 1);
+        // var LastDay = new Date(year, month + 1, 0);
+		// var pre = frappe.datetime.add_days(FirstDay, -6);
+		// var nxt = frappe.datetime.add_days(LastDay, -7);
+		// from_time_picker.update({
+		// 	showSecond: false,
+		// 	maxSeconds: 00,
+		// 	minDate: frappe.datetime.str_to_obj(pre),
+		// 	maxDate: frappe.datetime.str_to_obj(nxt)
+		// })
+		// var to_time_picker = frm.fields_dict.to_date.datepicker;
+		// to_time_picker.update({
+		// 	showSecond: false,
+		// 	maxSeconds: 00,
+		// 	minDate: frappe.datetime.str_to_obj(pre),
+		// 	maxDate: frappe.datetime.str_to_obj(nxt)
+		// })
         if (frm.is_new()) {
             frm.set_value("status", "Open");
             frm.trigger("calculate_total_days");
@@ -127,7 +190,8 @@ frappe.ui.form.on("Leave Application", {
     },
 
     get_leave_balance: function(frm) {
-        if(frm.doc.docstatus==0 && frm.doc.employee && frm.doc.leave_type && frm.doc.from_date) {
+        // if(frm.doc.docstatus==0 && frm.doc.employee && frm.doc.leave_type && frm.doc.from_date) {
+        if(frm.doc.employee && frm.doc.leave_type && frm.doc.from_date) {
             return frappe.call({
                 method: "erpnext.hr.doctype.leave_application.leave_application.get_leave_balance_on",
                 args: {
@@ -137,6 +201,7 @@ frappe.ui.form.on("Leave Application", {
                     consider_all_leaves_in_the_allocation_period: true
                 },
                 callback: function(r) {
+                    console.log(r.message)
                     if (!r.exc && r.message) {
                         if(Number.isInteger(r.message)){
                             frm.set_value('leave_balance', r.message);
@@ -175,7 +240,31 @@ frappe.ui.form.on("Leave Application", {
             });
         }
     },
-    
+    on_submit: function(frm){
+        if(frm.doc.status == "Approved"){
+            if (frm.doc.leave_type == "Casual Leave"){
+                m_status = "CL"
+            }else if (frm.doc.leave_type == "Privilege Leave"){
+                m_status = "PL"
+            }else if (frm.doc.leave_type == "Sick Leave"){
+                m_status = "SL"
+            }
+            frappe.call({
+                "method": 'hunter_douglas.update_attendance.update_attendance_by_app',
+                args: {
+                    "employee": frm.doc.employee,
+                    "from_date": frm.doc.from_date,
+                    "to_date": frm.doc.to_date,
+                    "from_date_session":frm.doc.from_date_session,
+                    "to_date_session": frm.doc.to_date_session,
+                    "m_status": m_status
+                },
+                callback: function(r){
+
+                }
+            })
+        }
+    }
 });
 
 

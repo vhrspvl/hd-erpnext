@@ -107,6 +107,68 @@ frappe.ui.form.on('Employee',{
 				})
 			});
 		}
+	},
+	onload: function(frm){
+		frm.add_custom_button(__('Update MIS'), function () {
+			var d = new frappe.ui.Dialog({
+				'fields': [
+					{ label: "Date of Joining", 'fieldname': 'date_of_joining', 'fieldtype': 'Date' },
+					{fieldtype: "Link", fieldname: "gender", label: __("Gender"), options: "Gender"},
+					{ label: "Date of Birth", 'fieldname': 'date_of_birth', 'fieldtype': 'Date' },
+					{fieldtype: "Link", fieldname: "department", label: __("Department"), options:"Department"},
+					{fieldtype: "Select", fieldname: "salary_mode", label: __("Salary Mode"), options: ["Bank","Cash","Cheque"]},
+					{fieldtype: "Data", fieldname: "bank_name", label: __("Bank Name"), depends_on: 'eval:doc.salary_mode == "Bank"'},
+					{fieldtype: "Data", fieldname: "bank_ac_no", label: __("Bank A/C No"), depends_on: 'eval:doc.salary_mode == "Bank"'},
+					{fieldtype: "Data", fieldname: "ifsc_code", label: __("IFSC Code"), depends_on: 'eval:doc.salary_mode == "Bank"'},
+					{fieldtype: "Column Break", fieldname: "cb6", label: __(""), reqd: 1},
+					{fieldtype: "Link", fieldname: "working_shift", label: __("Working Shift"), options: "Working Shift"},
+					{fieldtype: "Data", fieldname: "pan_number", label: __("PAN Number")},
+					{fieldtype: "Data", fieldname: "uan_number", label: __("UAN Number")},
+					{fieldtype: "Data", fieldname: "cell_number", label: __("Cell Number")},
+					{fieldtype: "Data", fieldname: "father_name", label: __("Father Name")},
+					{fieldtype: "Data", fieldname: "husband_wife_name", label: __("Husband /Wife Name")},
+					{fieldtype: "Section Break", fieldname: "sb1", label: __("Address details"), reqd: 1},
+					{fieldtype: "Select", fieldname: "permanent_address_is", label: __("Permanent Address Is"), options: ["Rented","Owned"]},
+					{fieldtype: "Small Text", fieldname: "permanent_address", label: __("Permanent Address")},
+					{fieldtype: "Column Break", fieldname: "cb1", label: __(""), reqd: 1},
+					{fieldtype: "Select", fieldname: "current_address_is", label: __("Current Address Is"), options: ["Rented","Owned"]},
+					{fieldtype: "Small Text", fieldname: "current_address", label: __("Current Address")}
+
+				],
+				primary_action: function () {
+					var args = d.get_values()
+					frappe.call({
+						method: "hunter_douglas.custom.update_mis",
+						args: {
+							"employee": frm.doc.employee_number,
+							"date_of_joining":args.date_of_joining,
+							"gender":args.gender,
+							"date_of_birth":args.date_of_birth,
+							"department":args.department,
+							"salary_mode":args.salary_mode,
+							"bank_name":args.bank_name,
+							"bank_ac_no":args.bank_ac_no,
+							"ifsc_code":args.ifsc_code,
+							"working_shift":args.working_shift,
+							"pan_number":args.pan_number,
+							"uan_number":args.uan_number,
+							"cell_number":args.cell_number,
+							"father_name":args.father_name,
+							"husband_wife_name":args.husband_wife_name,
+							"permanent_address_is":args.permanent_address_is,
+							"permanent_address":args.permanent_address,
+							"current_address_is":args.current_address_is,
+							"current_address":args.current_address					
+						},
+						callback: function (r) {
+							frappe.msgprint(__("Request Updated"))
+							d.hide()
+						}
+					})
+				}
+			});
+			d.show();
+		});
 	}
 });
 cur_frm.cscript = new erpnext.hr.EmployeeController({frm: cur_frm});

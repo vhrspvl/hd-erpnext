@@ -6,14 +6,15 @@ import frappe
 from frappe import _
 import decimal
 from frappe.utils import cint, cstr, date_diff, flt, formatdate, getdate, get_link_to_form, \
-    comma_or, get_fullname
+    comma_or, get_fullname,add_days
 from erpnext.hr.utils import set_employee_name
+from datetime import date,datetime #added by VHRS
 from erpnext.hr.doctype.leave_block_list.leave_block_list import get_applicable_block_dates
 from erpnext.hr.doctype.employee.employee import get_holiday_list_for_employee
 from erpnext.hr.doctype.employee_leave_approver.employee_leave_approver import get_approver_list
 from frappe.utils import today,flt,add_days,add_months,date_diff,getdate,formatdate,cint,cstr
 from hunter_douglas.hunter_douglas.report.monthly_absenteesim.monthly_absenteesim import is_holiday    
-
+from hunter_douglas.custom import update_attendance_by_app
 
 
 class LeaveDayBlockedError(frappe.ValidationError): pass
@@ -38,6 +39,7 @@ class LeaveApplication(Document):
         set_employee_name(self)
 
         self.validate_dates()
+        self.validate_cutoff() #by VHRS
         self.validate_balance_leaves()
         self.validate_leave_overlap()
         self.validate_max_days()
@@ -45,8 +47,31 @@ class LeaveApplication(Document):
         self.validate_block_days()
         self.validate_salary_processed_days()
         self.validate_leave_approver()
-        self.validate_attendance()
+        # self.validate_attendance()
         self.validate_policy()
+
+    def validate_cutoff(self):
+        settings = frappe.get_single("Attendance Settings")
+        cutoff_dates = settings.cut_off_dates
+        curdate = date.today()
+        if self.from_date and self.to_date:
+            from_date = (datetime.strptime(str(self.from_date),"%Y-%m-%d")).date()
+            from_date = (datetime.strptime(str(self.to_date),"%Y-%m-%d")).date()
+        month = {"January":1, "February":2, "March":3, "April":4, "May":5, "June":6, "July":7, "August":8, "September":9, "October":10, "November":11,
+		"December":12}
+        for c in cutoff_dates:
+            if curdate.month == month[c.month]:
+                cutoffdate = c.cut_off_date
+                cfrom_date = c.from_date
+                cto_date = c.to_date
+        # frappe.errprint(type(from_date))        
+        # if cutoffdate:
+        #     if self.from_date >= from_date and self.to_date <= to_date and curdate > cutoffdate:
+        #         frappe.throw(_("Salary already processed,Leave application period cannot be between this date range."))
+
+
+            # frappe.errprint(c["month"])
+            
 
     def on_update(self):
         if (not self.previous_doc and self.leave_approver) or (self.previous_doc and \
@@ -57,6 +82,15 @@ class LeaveApplication(Document):
     def on_submit(self):
         if self.status == "Open" or self.status == "Applied":
             frappe.throw(_("Only Leave Applications with status 'Approved' and 'Rejected' can be submitted"))
+        # if self.status == "Approved":
+        #     if self.leave_type == "Casual Leave":            
+        #         update_attendance_by_app(self.employee,self.from_date,self.to_date,self.from_date_session,self.to_date_session,"CL")
+        #     if self.leave_type == "Privilege Leave":            
+        #         update_attendance_by_app(self.employee,self.from_date,self.to_date,self.from_date_session,self.to_date_session,"PL")
+        #     if self.leave_type == "Sick Leave":            
+        #         update_attendance_by_app(self.employee,self.from_date,self.to_date,self.from_date_session,self.to_date_session,"SL")
+
+
 
         self.validate_back_dated_application()
 
@@ -232,30 +266,40 @@ class LeaveApplication(Document):
                 frappe.throw(_("Only the selected Leave Approver can submit this Leave Application"),
                     LeaveApproverIdentityError)
 
-    def validate_attendance(self):
-        attendance = frappe.db.sql("""select name from `tabAttendance` where employee = %s and (attendance_date between %s and %s)
-                    and status = "Present" and docstatus = 1""",
-            (self.employee, self.from_date, self.to_date))
-        if attendance:
-            frappe.throw(_("Attendance for employee {0} is already marked for this day").format(self.employee),
-                AttendanceAlreadyMarkedError)
+    # def validate_attendance(self):
+    #     if 
+    #     attendance = frappe.db.sql("""select name from `tabAttendance` where employee = %s and (attendance_date between %s and %s)
+    #                 and status = "Present" and docstatus = 1""",
+    #         (self.employee, self.from_date, self.to_date))
+    #     if attendance:
+    #         frappe.throw(_("Attendance for employee {0} is already marked for this day").format(self.employee),
+    #             AttendanceAlreadyMarkedError)
 
     def validate_policy(self):
+        wo_leave = False
         preday = add_days(self.from_date,-1)
-        # while is_holiday(self.employee,preday):
-        #     preday = add_days(preday,-1)   
-        # wo_leave = frappe.db.get_value("Leave Application",{"from_date":preday,"employee":self.employee},["leave_type"])
-        # if wo_leave:
-        #     frappe.throw(_("Leave of type {0} cannot be applied").format(wo_leave),
-        #         LeavePolicyViolationError)
+        while is_holiday(self.employee,preday):
+            preday = add_days(preday,-1)   
+        post_leave_record = frappe.db.sql("""select half_day,from_date_session,to_date_session,leave_type from `tabLeave Application`
+        where employee = %s and %s between from_date and to_date
+        and docstatus = 1 and status='Approved'""", (self.employee, preday), as_dict=True)
+        if post_leave_record:
+            for o in post_leave_record:
+                if o.from_date_session == 'Full Day' or o.from_date_session == 'Second Half':
+                    if self.from_date_session == 'Full Day' or self.from_date_session == 'Second Half':
+                        wo_leave = True
+                        wo_leave_type = o.leave_type
+            if wo_leave and wo_leave_type == self.leave_type:
+                frappe.throw(_("Two leaves of same type cannot be applied when Holidays occurs in between").format(wo_leave),
+                    LeavePolicyViolationError)
 
-        leave_record = frappe.db.sql("""select leave_type from `tabLeave Application`
-            where employee = %s and %s between from_date and to_date""", (self.employee, add_days(self.from_date,-1)), as_dict=True)
-        if leave_record:
-            leave_type = [x.leave_type for x in leave_record]     
-            if leave_type and leave_type[0] != self.leave_type:
-                frappe.throw(_("Leave of type {0} cannot be clubbed with previous {1}").format(self.leave_type,leave_type[0]),
-                    LeavePolicyViolationError)       
+        # leave_record = frappe.db.sql("""select leave_type from `tabLeave Application`
+        #     where employee = %s and %s between from_date and to_date""", (self.employee, add_days(self.from_date,-1)), as_dict=True)
+        # if leave_record and not self.half_day:
+        #     leave_type = [x.leave_type for x in leave_record]     
+        #     if leave_type and leave_type[0] != self.leave_type:
+        #         frappe.throw(_("Leave of type {0} cannot be clubbed with previous {1}").format(self.leave_type,leave_type[0]),
+        #             LeavePolicyViolationError)       
 
     def notify_employee(self, status):
         employee = frappe.get_doc("Employee", self.employee)
@@ -533,3 +577,37 @@ def add_holidays(events, start, end, employee, company):
                 "title": _("Holiday") + ": " + cstr(holiday.description),
                 "name": holiday.name
             })
+
+
+
+@frappe.whitelist()
+def check_attendance(emp,att_date,l_type):
+    if att_date:
+        x = 1
+        for x in range(30):
+            preday = add_days(att_date,-x)
+            if frappe.db.exists("Attendance",{"employee": emp,"attendance_date": preday}):
+                att = frappe.get_doc("Attendance",{"employee": emp,"attendance_date": preday})
+                if att.status == "Present" or att.status == "Half Day":
+                    return "Allowed"
+                elif att.status == "Absent":
+                    leave = frappe.db.sql("""select leave_type1,from_date,to_date from `tabLeave Application`
+                        where employee = %s and %s between from_date and to_date
+                        and docstatus = 1 and status='Approved'""", (emp, preday), as_dict=True)
+
+                    if leave: 
+                        for l in leave:
+                            if l.leave_type1 == 'Casual Leave' and l_type != 'Casual Leave':
+                                return "Casual Leave cannot be clubbed with other Leaves,you have applied %s between %s and %s" % (l.leave_type1,formatdate(l.from_date),formatdate(l.to_date))
+                elif att.status == "On Leave":
+                    leave = frappe.db.sql("""select leave_type1,from_date,to_date from `tabLeave Application`
+                        where employee = %s and %s between from_date and to_date
+                        and docstatus = 1 and status='Approved'""", (emp, preday), as_dict=True)
+                    if leave:
+                        for l in leave:
+                            if l.leave_type1 == 'Casual Leave' and l_type != 'Casual Leave':
+                                return "Casual Leave cannot be clubbed with other Leaves,you have applied %s between %s and %s" % (l.leave_type1,formatdate(l.from_date),formatdate(l.to_date))
+                else:
+                    return "Allowed"
+            else:
+                return "Allowed"        

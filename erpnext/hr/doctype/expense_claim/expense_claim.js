@@ -77,7 +77,7 @@ cur_frm.cscript.refresh = function(doc) {
 	if(!doc.__islocal) {
 		cur_frm.toggle_enable("exp_approver", doc.approval_status=="Draft");
 		cur_frm.toggle_enable("approval_status", (doc.exp_approver==frappe.session.user && doc.docstatus==0));
-
+		console.log(doc.exp_approver)
 		if (doc.docstatus==0 && doc.exp_approver==frappe.session.user && doc.approval_status=="Approved")
 			cur_frm.savesubmit();
 

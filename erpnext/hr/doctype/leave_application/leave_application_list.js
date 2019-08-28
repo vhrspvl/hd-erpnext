@@ -9,7 +9,14 @@ frappe.listview_settings['Leave Application'] = {
 		var emp = 0;
 		me.page.sidebar.find(".list-link[data-view='Kanban']").addClass("hide");
 		me.page.sidebar.find(".list-link[data-view='Tree']").addClass("hide");
-		me.page.sidebar.find(".assigned-to-me a").addClass("hide");		
+		me.page.sidebar.find(".assigned-to-me a").addClass("hide");	
+		frappe.model.get_value('Employee', { 'user_id': frappe.session.user }, 'employee_number',
+            function (data) {
+                if (data) {
+                    me.filter_list.add_filter(me.doctype, "employee", '=', data.employee_number);
+                    me.run()
+                }
+            })	
 		frappe.call({
 			"method": "frappe.client.get_list",
 			args:{
